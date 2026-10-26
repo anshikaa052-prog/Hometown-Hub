@@ -1,0 +1,116 @@
+.communities-page {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.communities-page h1 {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.community-section {
+  margin-bottom: 30px;
+}
+
+.community-section h2 {
+  margin-bottom: 15px;
+}
+
+.community-search {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.community-search input,
+.community-form input,
+.community-form textarea {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.community-search input {
+  flex: 1;
+}
+
+.community-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 600px;
+}
+
+.community-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.community-button {
+  padding: 11px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #333;
+  color: white;
+  font-size: 15px;
+}
+
+.community-button:hover {
+  opacity: 0.85;
+}
+
+.community-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.community-card {
+  padding: 22px;
+  margin-bottom: 18px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.community-card h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.community-card p {
+  margin: 8px 0;
+}
+
+.view-button {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  background: #333;
+  color: white;
+}
+
+.view-button:hover {
+  opacity: 0.85;
+}
+
+@media (max-width: 600px) {
+  .communities-page {
+    margin: 20px auto;
+    padding: 15px;
+  }
+
+  .community-search {
+    flex-direction: column;
+  }
+
+  .community-button {
+    width: 100%;
+  }
+}
