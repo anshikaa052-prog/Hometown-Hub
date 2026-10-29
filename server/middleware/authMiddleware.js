@@ -4,15 +4,21 @@ import User from "../models/User.js";
 
 export const protect = async (req, res, next) => {
   try {
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not configured");
+
+      return res.status(500).json({
+        success: false,
+        message: "Server configuration error",
+      });
+    }
+
     let token;
 
-    if (req.cookies && req.cookies.token) {
+    if (req.cookies?.token) {
       token = req.cookies.token;
-    } else if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer ")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
+    } else if (req.headers.authorization?.startsWith("Bearer ")) {
+      token = req.headers.authorization.slice(7).trim();
     }
 
     if (!token) {
@@ -23,6 +29,13 @@ export const protect = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!decoded.userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Token is invalid",
+      });
+    }
 
     const user = await User.findById(decoded.userId).select("-password");
 
@@ -43,16 +56,26 @@ export const protect = async (req, res, next) => {
     req.user = user;
     req.userId = user._id.toString();
 
-    next();
+    return next();
   } catch (error) {
-    return res.status(401).json({
+    if (error.name === "TokenExpiredError" ||
+        error.name === "JsonWebTokenError" ||
+        error.name === "NotBeforeError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token is invalid or expired",
+      });
+    }
+
+    console.error("Authentication error:", error);
+
+    return res.status(500).json({
       success: false,
-      message: "Token is invalid",
+      message: "Server error during authentication",
     });
   }
 };
 
-// Admin-only access
 export const adminOnly = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -68,5 +91,5 @@ export const adminOnly = (req, res, next) => {
     });
   }
 
-  next();
+  return next();
 };

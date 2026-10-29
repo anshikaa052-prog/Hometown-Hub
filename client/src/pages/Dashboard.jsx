@@ -4,13 +4,16 @@ import API from "../services/api";
 
 function Dashboard() {
   const [message, setMessage] = useState("");
+  const [role, setRole] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     const getProtectedData = async () => {
       try {
         const response = await API.get("/test/protected");
+
         setMessage(response.data.message);
+        setRole(response.data.user?.role || "");
       } catch (error) {
         navigate("/login");
       }
@@ -22,7 +25,6 @@ function Dashboard() {
   const handleLogout = async () => {
     try {
       const response = await API.post("/auth/logout");
-
       localStorage.removeItem("userId");
       alert(response.data.message);
       navigate("/login");
@@ -36,21 +38,17 @@ function Dashboard() {
       <h1>Dashboard</h1>
       <p>{message}</p>
 
-      <button onClick={() => navigate("/profile")}>
-        Profile
-      </button>{" "}
+      <button onClick={() => navigate("/profile")}>Profile</button>{" "}
+      <button onClick={() => navigate("/communities")}>Communities</button>{" "}
+      <button onClick={() => navigate("/notifications")}>Notifications</button>{" "}
 
-      <button onClick={() => navigate("/communities")}>
-        Communities
-      </button>{" "}
+      {role === "admin" && (
+        <button onClick={() => navigate("/admin")}>
+          Admin Dashboard
+        </button>
+      )}{" "}
 
-      <button onClick={() => navigate("/notifications")}>
-        Notifications
-      </button>{" "}
-
-      <button onClick={handleLogout}>
-        Logout
-      </button>
+      <button onClick={handleLogout}>Logout</button>
     </div>
   );
 }

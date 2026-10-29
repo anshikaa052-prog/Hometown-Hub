@@ -1,4 +1,5 @@
 
+import mongoose from "mongoose";
 import Report from "../models/Report.js";
 
 // Get all abuse reports
@@ -15,7 +16,7 @@ export const getAllReports = async (req, res, next) => {
       reports,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };
 
@@ -24,6 +25,13 @@ export const updateReportStatus = async (req, res, next) => {
   try {
     const { reportId } = req.params;
     const { status, adminNote } = req.body;
+
+    if (!mongoose.isValidObjectId(reportId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid report ID",
+      });
+    }
 
     const allowedStatuses = [
       "pending",
@@ -36,6 +44,16 @@ export const updateReportStatus = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: "Invalid report status",
+      });
+    }
+
+    if (
+      adminNote !== undefined &&
+      (typeof adminNote !== "string" || adminNote.length > 500)
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Admin note must be a string of up to 500 characters",
       });
     }
 
@@ -62,6 +80,6 @@ export const updateReportStatus = async (req, res, next) => {
       report,
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 };

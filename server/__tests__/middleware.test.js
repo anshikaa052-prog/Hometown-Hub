@@ -18,6 +18,7 @@ const { default: User } = await import("../models/User.js");
 const { protect, adminOnly } = await import(
   "../middleware/authMiddleware.js"
 );
+
 import jwt from "jsonwebtoken";
 
 process.env.JWT_SECRET = "test-secret-key";
@@ -111,7 +112,7 @@ describe("Protected Route Tests", () => {
 
     expect(res.json).toHaveBeenCalledWith({
       success: false,
-      message: "Token is invalid",
+      message: "Token is invalid or expired",
     });
 
     expect(next).not.toHaveBeenCalled();
