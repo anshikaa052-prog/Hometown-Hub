@@ -31,6 +31,7 @@ export const createCommunity = async (req, res) => {
     });
   } catch (error) {
     console.error("Create community error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to create community",
@@ -55,6 +56,7 @@ export const getCommunities = async (req, res) => {
     });
   } catch (error) {
     console.error("Get communities error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to fetch communities",
@@ -74,18 +76,20 @@ export const searchCommunities = async (req, res) => {
       });
     }
 
+    const searchTerm = search.trim();
+
     const communities = await Community.find({
       approvalStatus: "approved",
       $or: [
         {
           name: {
-            $regex: search.trim(),
+            $regex: searchTerm,
             $options: "i",
           },
         },
         {
           city: {
-            $regex: search.trim(),
+            $regex: searchTerm,
             $options: "i",
           },
         },
@@ -102,6 +106,7 @@ export const searchCommunities = async (req, res) => {
     });
   } catch (error) {
     console.error("Search communities error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to search communities",
@@ -113,6 +118,7 @@ export const searchCommunities = async (req, res) => {
 export const joinCommunity = async (req, res) => {
   try {
     const { communityId } = req.params;
+
     const community = await Community.findById(communityId);
 
     if (!community) {
@@ -131,20 +137,22 @@ export const joinCommunity = async (req, res) => {
 
     const userId = req.userId.toString();
 
-    if (
-      community.members.some((id) => id.toString() === userId)
-    ) {
+    const isMember = (community.members || []).some(
+      (id) => id.toString() === userId
+    );
+
+    if (isMember) {
       return res.status(400).json({
         success: false,
         message: "You are already a member of this community",
       });
     }
 
-    if (
-      (community.joinRequests || []).some(
-        (id) => id.toString() === userId
-      )
-    ) {
+    const hasPendingRequest = (
+      community.joinRequests || []
+    ).some((id) => id.toString() === userId);
+
+    if (hasPendingRequest) {
       return res.status(400).json({
         success: false,
         message: "Join request already submitted",
@@ -152,6 +160,7 @@ export const joinCommunity = async (req, res) => {
     }
 
     community.joinRequests.push(req.userId);
+
     await community.save();
 
     res.status(200).json({
@@ -161,6 +170,7 @@ export const joinCommunity = async (req, res) => {
     });
   } catch (error) {
     console.error("Join community error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to submit join request",
@@ -184,26 +194,30 @@ export const getCommunityById = async (req, res) => {
     if (!community) {
       return res.status(404).json({
         success: false,
-        message: "Community not found",
+        message: "Community not found or not approved yet",
       });
     }
 
     res.status(200).json({
       success: true,
       community: {
+        _id: community._id,
         id: community._id,
         name: community.name,
-        city: community.city,
-        description: community.description,
-        coverImage: community.coverImage,
+        city: community.city || "",
+        state: community.state || "",
+        country: community.country || "",
+        description: community.description || "",
+        coverImage: community.coverImage || "",
         createdBy: community.createdBy,
-        members: community.members,
+        members: community.members || [],
         moderators: community.moderators || [],
-        memberCount: community.members.length,
+        memberCount: (community.members || []).length,
       },
     });
   } catch (error) {
     console.error("Get community error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to fetch community",
@@ -232,7 +246,9 @@ export const uploadCommunityCover = async (req, res) => {
       });
     }
 
-    if (community.createdBy.toString() !== req.userId.toString()) {
+    if (
+      community.createdBy.toString() !== req.userId.toString()
+    ) {
       return res.status(403).json({
         success: false,
         message: "Only the community creator can upload the cover image",
@@ -245,9 +261,12 @@ export const uploadCommunityCover = async (req, res) => {
           folder: "hometown-hub/community-covers",
           resource_type: "image",
         },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+        (error, uploadResult) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(uploadResult);
+          }
         }
       );
 
@@ -255,6 +274,7 @@ export const uploadCommunityCover = async (req, res) => {
     });
 
     community.coverImage = result.secure_url;
+
     await community.save();
 
     res.status(200).json({
@@ -264,6 +284,7 @@ export const uploadCommunityCover = async (req, res) => {
     });
   } catch (error) {
     console.error("Community cover upload error:", error);
+
     res.status(500).json({
       success: false,
       message: "Community cover image upload failed",
@@ -293,7 +314,9 @@ export const assignModerator = async (req, res) => {
       });
     }
 
-    if (community.createdBy.toString() !== req.userId.toString()) {
+    if (
+      community.createdBy.toString() !== req.userId.toString()
+    ) {
       return res.status(403).json({
         success: false,
         message: "Only the community creator can manage moderators",
@@ -309,8 +332,8 @@ export const assignModerator = async (req, res) => {
       });
     }
 
-    const isMember = community.members.some(
-      (id) => id.toString() === userId
+    const isMember = (community.members || []).some(
+      (id) => id.toString() === userId.toString()
     );
 
     if (!isMember) {
@@ -320,18 +343,18 @@ export const assignModerator = async (req, res) => {
       });
     }
 
-    if (community.createdBy.toString() === userId) {
+    if (community.createdBy.toString() === userId.toString()) {
       return res.status(400).json({
         success: false,
         message: "Community creator cannot be assigned as a moderator",
       });
     }
 
-    if (
-      (community.moderators || []).some(
-        (id) => id.toString() === userId
-      )
-    ) {
+    const alreadyModerator = (
+      community.moderators || []
+    ).some((id) => id.toString() === userId.toString());
+
+    if (alreadyModerator) {
       return res.status(400).json({
         success: false,
         message: "User is already a moderator",
@@ -339,6 +362,7 @@ export const assignModerator = async (req, res) => {
     }
 
     community.moderators.push(userId);
+
     await community.save();
 
     res.status(200).json({
@@ -348,6 +372,7 @@ export const assignModerator = async (req, res) => {
     });
   } catch (error) {
     console.error("Assign moderator error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to assign moderator",
@@ -359,6 +384,7 @@ export const assignModerator = async (req, res) => {
 export const removeModerator = async (req, res) => {
   try {
     const { communityId, userId } = req.params;
+
     const community = await Community.findById(communityId);
 
     if (!community) {
@@ -368,7 +394,9 @@ export const removeModerator = async (req, res) => {
       });
     }
 
-    if (community.createdBy.toString() !== req.userId.toString()) {
+    if (
+      community.createdBy.toString() !== req.userId.toString()
+    ) {
       return res.status(403).json({
         success: false,
         message: "Only the community creator can manage moderators",
@@ -376,7 +404,7 @@ export const removeModerator = async (req, res) => {
     }
 
     const isModerator = (community.moderators || []).some(
-      (id) => id.toString() === userId
+      (id) => id.toString() === userId.toString()
     );
 
     if (!isModerator) {
@@ -386,9 +414,9 @@ export const removeModerator = async (req, res) => {
       });
     }
 
-    community.moderators = community.moderators.filter(
-      (id) => id.toString() !== userId
-    );
+    community.moderators = (
+      community.moderators || []
+    ).filter((id) => id.toString() !== userId.toString());
 
     await community.save();
 
@@ -399,6 +427,7 @@ export const removeModerator = async (req, res) => {
     });
   } catch (error) {
     console.error("Remove moderator error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to remove moderator",
@@ -423,8 +452,10 @@ export const getJoinRequests = async (req, res) => {
   try {
     const { communityId } = req.params;
 
-    const community = await Community.findById(communityId)
-      .populate("joinRequests", "name email");
+    const community = await Community.findById(communityId).populate(
+      "joinRequests",
+      "name email"
+    );
 
     if (!community) {
       return res.status(404).json({
@@ -446,6 +477,7 @@ export const getJoinRequests = async (req, res) => {
     });
   } catch (error) {
     console.error("Get join requests error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to fetch join requests",
@@ -457,6 +489,7 @@ export const getJoinRequests = async (req, res) => {
 export const approveJoinRequest = async (req, res) => {
   try {
     const { communityId, userId } = req.params;
+
     const community = await Community.findById(communityId);
 
     if (!community) {
@@ -474,7 +507,7 @@ export const approveJoinRequest = async (req, res) => {
     }
 
     const hasRequest = (community.joinRequests || []).some(
-      (id) => id.toString() === userId
+      (id) => id.toString() === userId.toString()
     );
 
     if (!hasRequest) {
@@ -484,17 +517,17 @@ export const approveJoinRequest = async (req, res) => {
       });
     }
 
-    const alreadyMember = community.members.some(
-      (id) => id.toString() === userId
+    const alreadyMember = (community.members || []).some(
+      (id) => id.toString() === userId.toString()
     );
 
     if (!alreadyMember) {
       community.members.push(userId);
     }
 
-    community.joinRequests = community.joinRequests.filter(
-      (id) => id.toString() !== userId
-    );
+    community.joinRequests = (
+      community.joinRequests || []
+    ).filter((id) => id.toString() !== userId.toString());
 
     await community.save();
 
@@ -504,6 +537,7 @@ export const approveJoinRequest = async (req, res) => {
     });
   } catch (error) {
     console.error("Approve join request error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to approve join request",
@@ -515,6 +549,7 @@ export const approveJoinRequest = async (req, res) => {
 export const rejectJoinRequest = async (req, res) => {
   try {
     const { communityId, userId } = req.params;
+
     const community = await Community.findById(communityId);
 
     if (!community) {
@@ -532,7 +567,7 @@ export const rejectJoinRequest = async (req, res) => {
     }
 
     const hasRequest = (community.joinRequests || []).some(
-      (id) => id.toString() === userId
+      (id) => id.toString() === userId.toString()
     );
 
     if (!hasRequest) {
@@ -542,9 +577,9 @@ export const rejectJoinRequest = async (req, res) => {
       });
     }
 
-    community.joinRequests = community.joinRequests.filter(
-      (id) => id.toString() !== userId
-    );
+    community.joinRequests = (
+      community.joinRequests || []
+    ).filter((id) => id.toString() !== userId.toString());
 
     await community.save();
 
@@ -554,6 +589,7 @@ export const rejectJoinRequest = async (req, res) => {
     });
   } catch (error) {
     console.error("Reject join request error:", error);
+
     res.status(500).json({
       success: false,
       message: "Failed to reject join request",

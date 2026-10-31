@@ -1,104 +1,136 @@
 
 import { useNavigate } from "react-router-dom";
+import "./AdminDashboard.css";
 
 function AdminDashboard() {
   const navigate = useNavigate();
 
+  const adminSections = [
+    {
+      icon: "🏘️",
+      title: "Community Approvals",
+      description:
+        "Review community requests and manage approval decisions.",
+      button: "Manage Approvals",
+      path: "/admin/communities",
+      color: "blue",
+    },
+    {
+      icon: "👥",
+      title: "User Management",
+      description:
+        "Manage registered users and maintain a safe community.",
+      button: "Manage Users",
+      path: "/admin/users",
+      color: "purple",
+    },
+    {
+      icon: "🚩",
+      title: "Abuse Reports",
+      description:
+        "Review reported content and handle moderation issues.",
+      button: "Manage Reports",
+      path: "/admin/reports",
+      color: "red",
+    },
+    {
+      icon: "📊",
+      title: "Analytics",
+      description:
+        "Explore platform statistics and community activity.",
+      button: "View Analytics",
+      path: "/admin/analytics",
+      color: "green",
+    },
+    {
+      icon: "🏷️",
+      title: "Category Management",
+      description:
+        "Add, edit, activate, or deactivate content categories.",
+      button: "Manage Categories",
+      path: "/admin/categories",
+      color: "orange",
+    },
+  ];
+
   return (
-    <div
-      style={{
-        maxWidth: "1000px",
-        margin: "40px auto",
-        padding: "20px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <h1>Admin Dashboard</h1>
-      <p>Welcome to the Hometown Hub Admin Panel.</p>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "20px",
-          marginTop: "30px",
-        }}
-      >
-        <div style={cardStyle}>
-          <h3>Community Approvals</h3>
-          <p>Review community requests.</p>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/communities")}
-          >
-            Manage Community Approvals
-          </button>
+    <main className="admin-dashboard-page">
+      <header className="admin-dashboard-header">
+        <div className="admin-dashboard-brand">
+          <span className="admin-brand-icon">H</span>
+          <span>Hometown Hub</span>
         </div>
 
-        <div style={cardStyle}>
-          <h3>User Management</h3>
-          <p>Manage registered users.</p>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/users")}
-          >
-            Manage Users
-          </button>
+        <button
+          type="button"
+          className="admin-back-button"
+          onClick={() => navigate("/dashboard")}
+        >
+          ← Back to Dashboard
+        </button>
+      </header>
+
+      <section className="admin-dashboard-hero">
+        <div className="admin-hero-label">
+          <span className="admin-status-dot" />
+          ADMIN CONTROL PANEL
         </div>
 
-        <div style={cardStyle}>
-          <h3>Abuse Reports</h3>
-          <p>Review reports and moderation issues.</p>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/reports")}
-          >
-            Manage Abuse Reports
-          </button>
+        <h1>Admin Dashboard</h1>
+
+        <p>
+          Welcome to the Hometown Hub Admin Panel. Manage users,
+          communities, reports, and platform settings from one place.
+        </p>
+      </section>
+
+      <section className="admin-dashboard-content">
+        <div className="admin-section-heading">
+          <div>
+            <h2>Platform Management</h2>
+            <p>Select a section to manage your platform.</p>
+          </div>
+
+          <span className="admin-section-count">
+            {adminSections.length} Sections
+          </span>
         </div>
 
-        <div style={cardStyle}>
-          <h3>Analytics</h3>
-          <p>View platform statistics.</p>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/analytics")}
-          >
-            View Analytics
-          </button>
-        </div>
+        <div className="admin-dashboard-grid">
+          {adminSections.map((section) => (
+            <article
+              className="admin-dashboard-card"
+              key={section.path}
+            >
+              <div
+                className={`admin-card-icon admin-icon-${section.color}`}
+                aria-hidden="true"
+              >
+                {section.icon}
+              </div>
 
-        <div style={cardStyle}>
-          <h3>Category Management</h3>
-          <p>Add, edit, activate, or deactivate content categories.</p>
-          <button
-            type="button"
-            onClick={() => navigate("/admin/categories")}
-          >
-            Manage Categories
-          </button>
-        </div>
-      </div>
+              <h3>{section.title}</h3>
 
-      <button
-        type="button"
-        onClick={() => navigate("/dashboard")}
-        style={{
-          marginTop: "30px",
-          padding: "10px 16px",
-        }}
-      >
-        Back to Dashboard
-      </button>
-    </div>
+              <p>{section.description}</p>
+
+              <button
+                type="button"
+                className="admin-card-button"
+                onClick={() => navigate(section.path)}
+              >
+                {section.button}
+                <span aria-hidden="true"> →</span>
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <footer className="admin-dashboard-footer">
+        Hometown Hub · Administration Panel
+      </footer>
+    </main>
   );
 }
-
-const cardStyle = {
-  border: "1px solid #ddd",
-  borderRadius: "10px",
-  padding: "20px",
-  background: "#fff",
-};
 
 export default AdminDashboard;
