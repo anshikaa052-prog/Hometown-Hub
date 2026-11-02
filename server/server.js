@@ -1,3 +1,4 @@
+
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -19,7 +20,7 @@ import PostRoutes from "./routes/postRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-import ChatRoutes from "./routes/chatRoutes.js";
+import ChatRoutes from "./routes/ChatRoutes.js";
 import Community from "./models/Community.js";
 import adminCommunityRoutes from "./routes/adminCommunityRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
@@ -32,23 +33,34 @@ connectDB();
 const app = express();
 const httpServer = createServer(app);
 
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.CLIENT_URL,
-    credentials: true,
+// Allowed frontend URLs
+const allowedOrigins = [
+  "https://hometown-hub-one.vercel.app",
+  "https://hometown-qok2y39dk-anshikaa052-progs-projects.vercel.app",
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
   },
+  credentials: true,
+};
+
+// Socket.io configuration
+const io = new Server(httpServer, {
+  cors: corsOptions,
 });
 
 // Make Socket.io available to controllers
 app.set("io", io);
 
 // Middleware
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -68,6 +80,7 @@ app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/admin/reports", adminReportRoutes);
 app.use("/api/admin/analytics", adminAnalyticsRoutes);
 app.use("/api/admin/categories", adminCategoryRoutes);
+
 // Home route
 app.get("/", (req, res) => {
   res.json({
