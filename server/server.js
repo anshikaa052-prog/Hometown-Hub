@@ -20,7 +20,7 @@ import PostRoutes from "./routes/postRoutes.js";
 import commentRoutes from "./routes/commentRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-import ChatRoutes from "./routes/ChatRoutes.js";
+import ChatRoutes from "./routes/chatRoutes.js";
 import Community from "./models/Community.js";
 import adminCommunityRoutes from "./routes/adminCommunityRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
