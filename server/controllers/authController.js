@@ -1,6 +1,17 @@
+
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
 // Register User
 export const registerUser = async (req, res) => {
@@ -118,15 +129,7 @@ export const loginUser = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    const isProduction = process.env.NODE_ENV === "production";
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/",
-    });
+    res.cookie("token", token, cookieOptions);
 
     return res.status(200).json({
       success: true,
@@ -149,12 +152,10 @@ export const loginUser = async (req, res) => {
 
 // Logout User
 export const logoutUser = (req, res) => {
-  const isProduction = process.env.NODE_ENV === "production";
-
   res.clearCookie("token", {
     httpOnly: true,
     secure: isProduction,
-    sameSite: "lax",
+    sameSite: isProduction ? "none" : "lax",
     path: "/",
   });
 
