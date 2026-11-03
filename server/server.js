@@ -1,6 +1,5 @@
 
 import dotenv from "dotenv";
-
 dotenv.config();
 
 import express from "express";
@@ -28,40 +27,67 @@ import adminReportRoutes from "./routes/adminReportRoutes.js";
 import adminAnalyticsRoutes from "./routes/adminAnalyticsRoutes.js";
 import adminCategoryRoutes from "./routes/adminCategoryRoutes.js";
 
-connectDB();
-
 const app = express();
 const httpServer = createServer(app);
 
-// Allowed frontend URLs
-const allowedOrigins = [
-  "https://hometown-hub-one.vercel.app",
-  "https://hometown-qok2y39dk-anshikaa052-progs-projects.vercel.app",
-];
+// Check and allow trusted frontend origins
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname;
+
+    // Stable production frontend URL
+    if (hostname === "hometown-hub-one.vercel.app") {
+      return url.protocol === "https:";
+    }
+
+    // Hometown Hub Vercel deployment URLs
+    const isHometownVercel =
+      /^hometown-[a-z0-9-]+-anshikaa052-progs-projects\.vercel\.app$/.test(
+        hostname
+      );
+
+    if (isHometownVercel) {
+      return url.protocol === "https:";
+    }
+
+    // Local development
+    return (
+      url.protocol === "http:" &&
+      ["localhost", "127.0.0.1"].includes(hostname)
+    );
+  } catch {
+    return false;
+  }
+};
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin(origin)) {
       callback(null, true);
     } else {
-      callback(new Error("Not allowed by CORS"));
+      callback(new Error("Origin not allowed by CORS"));
     }
   },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
-// Socket.io configuration
+// Database
+connectDB();
+
+// Socket.io
 const io = new Server(httpServer, {
   cors: corsOptions,
 });
 
-// Make Socket.io available to controllers
 app.set("io", io);
 
 // Middleware
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
-
 app.use(express.json());
 app.use(cookieParser());
 
@@ -89,11 +115,10 @@ app.get("/", (req, res) => {
   });
 });
 
-// Socket.io connection and notification rooms
+// Socket.io connections
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
 
-  // Join user notification room
   socket.on("joinUserRoom", (userId) => {
     if (
       typeof userId === "string" &&
@@ -101,12 +126,10 @@ io.on("connection", (socket) => {
     ) {
       socket.data.userId = userId;
       socket.join(userId);
-
       console.log(`User joined notification room: ${userId}`);
     }
   });
 
-  // Join community chat room
   socket.on("joinCommunityRoom", async (communityId) => {
     try {
       const userId = socket.data.userId;
@@ -127,7 +150,6 @@ io.on("connection", (socket) => {
 
       if (isMember) {
         socket.join(`community:${communityId}`);
-
         console.log(`User joined community chat: ${communityId}`);
       }
     } catch (error) {
@@ -135,7 +157,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Leave community chat room
   socket.on("leaveCommunityRoom", (communityId) => {
     if (
       typeof communityId === "string" &&
