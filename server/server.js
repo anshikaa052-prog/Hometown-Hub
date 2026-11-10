@@ -115,6 +115,11 @@ app.get("/", (req, res) => {
   });
 });
 
+// Health check route (UptimeRobot ke liye)
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 // Socket.io connections
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
