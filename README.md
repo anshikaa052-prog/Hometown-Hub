@@ -1,74 +1,136 @@
+
 # Hometown Hub – Digital Community Platform
 
-A MERN-stack digital community platform that connects people with their hometown communities. Users can share posts, interact with community members, participate in events, receive notifications, and communicate through real-time chat.
+Hometown Hub is a digital community platform that connects people with their hometown communities. Users can create profiles, join communities, share posts, participate in events, receive notifications, and communicate through real-time chat.
 
-## 🚀 Live Demo
+## Live Demo
 
 - **Frontend:** https://hometown-hub-one.vercel.app
-- **Backend API:** https://hometown-hub-backend-lktf.onrender.com
+- **Backend:** https://hometown-hub-backend-lktf.onrender.com
 - **GitHub Repository:** https://github.com/anshikaa052-prog/Hometown-Hub
 
-## ✨ Features
+> **Note:** The backend is hosted on Render. The first request may take around 1 minute while the server starts.
+
+## Screenshots
+
+### Home / Feed
+![Home Page](screenshots/home.png)
+
+### Communities
+![Community Page](screenshots/community.png)
+
+### Events
+![Events Page](screenshots/events.png)
+
+### Admin Dashboard
+![Admin Dashboard](screenshots/admin-dashboard.png)
+
+### Notifications
+![Notifications](screenshots/notifications.png)
+
+### User Profile
+![Profile](screenshots/profile.png)
+
+## Features
 
 ### User Features
 - User registration and login
+- Secure authentication
 - User profile management
-- Create, edit, and delete posts
+- Create, view, and interact with posts
 - Like and comment on posts
 - Join and explore communities
-- Create and explore community events
+- Participate in community events
 - Real-time notifications
 - Real-time chat
 
 ### Admin Features
 - Admin dashboard
-- Manage users and block/unblock accounts
-- Review and manage reported content
+- User management
+- Block and unblock users
 - Community approval management
-- View platform analytics
+- Report moderation
+- Analytics and platform statistics
 
-## 🛠️ Tech Stack
+## Technology Stack
 
-**Frontend:** React.js, JavaScript, HTML5, CSS3, Vite
+### Frontend
+- React.js
+- JavaScript
+- HTML5
+- CSS3
+- Vite
 
-**Backend:** Node.js, Express.js, Socket.IO
+### Backend
+- Node.js
+- Express.js
+- Socket.IO
 
-**Database:** MongoDB, Mongoose
+### Database
+- MongoDB
+- Mongoose
 
-**Tools & Deployment:** Git, GitHub, Vercel, Render, Cloudinary
+### Tools & Deployment
+- Git
+- GitHub
+- Vercel
+- Render
+- Cloudinary
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 Hometown-Hub/
+│
 ├── client/
+│   ├── src/
+│   ├── public/
+│   └── package.json
+│
 ├── server/
+│   ├── controllers/
+│   ├── models/
+│   ├── routes/
+│   ├── middleware/
+│   ├── config/
+│   └── package.json
+│
+├── screenshots/
+│   ├── home.png
+│   ├── community.png
+│   ├── events.png
+│   ├── admin-dashboard.png
+│   ├── notifications.png
+│   └── profile.png
+│
+├── .gitignore
 └── README.md
 ```
 
-## ⚙️ Installation and Setup
+## Installation and Setup
 
-### 1. Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/anshikaa052-prog/Hometown-Hub.git
 cd Hometown-Hub
 ```
 
-### 2. Setup Backend
+### 2. Backend Setup
 
 ```bash
 cd server
 npm install
 ```
 
-Create a `.env` file inside the server folder:
+Create a `.env` file inside the server folder and configure:
 
 ```env
 PORT=5000
-CLIENT_URL=http://localhost:5173
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
+CLIENT_URL=http://localhost:5173
+
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
@@ -80,7 +142,7 @@ Start the backend:
 npm run dev
 ```
 
-### 3. Setup Frontend
+### 3. Frontend Setup
 
 Open another terminal:
 
@@ -101,21 +163,38 @@ Start the frontend:
 npm run dev
 ```
 
-## 🌐 Deployment
+The application will run locally using the frontend and backend development servers.
+
+## Environment Variables
+
+Do not share or upload actual environment variable values, database credentials, API keys, or JWT secrets to GitHub.
+
+## Demo Accounts
+
+For testing purposes, demo accounts can be added here.
+
+- **Demo User Email:** Add test user email
+- **Demo User Password:** Add test user password
+- **Demo Admin Email:** Add test admin email
+- **Demo Admin Password:** Add test admin password
+
+Only use dedicated test accounts. Never add personal or production account credentials.
+
+## Deployment
 
 - Frontend deployed on Vercel.
 - Backend deployed on Render.
-- MongoDB Atlas used for database hosting.
-- Cloudinary used for media storage.
+- Database hosted on MongoDB Atlas.
+- Image uploads managed through Cloudinary.
 
-## 👩‍💻 Developed By
+## Developer
 
 **Anshika Agarwal**
 
 B.Tech – Computer Science and Engineering
 
-Developed as an internship project using the MERN stack.
+GitHub: https://github.com/anshikaa052-prog
 
 ---
 
-⭐ Thank you for exploring Hometown Hub!
+If you find this project useful, feel free to explore the repository.
