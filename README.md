@@ -171,14 +171,12 @@ Do not share or upload actual environment variable values, database credentials,
 
 ## Demo Accounts
 
-For testing purposes, demo accounts can be added here.
+Demo account credentials are available on request.
 
-- **Demo User Email:** Add test user email
-- **Demo User Password:** Add test user password
-- **Demo Admin Email:** Add test admin email
-- **Demo Admin Password:** Add test admin password
+Please contact the developer for testing access.
 
-Only use dedicated test accounts. Never add personal or production account credentials.
+Only dedicated test accounts should be used.
+Personal or production account credentials must never be shared.
 
 ## Deployment
 
