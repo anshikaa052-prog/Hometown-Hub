@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import API from "../services/api";
+import Navbar from "./Navbar";
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const [user, setUser] = useState(null);
@@ -48,7 +49,12 @@ function ProtectedRoute({ children, adminOnly = false }) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return children;
+  return (
+    <>
+      <Navbar user={user} />
+      {children}
+    </>
+  );
 }
 
 export default ProtectedRoute;

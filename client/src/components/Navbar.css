@@ -1,0 +1,149 @@
+
+.main-navbar {
+  width: 100%;
+  min-height: 76px;
+  padding: 0 6%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(120deg, #172554, #1e40af);
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.15);
+  position: relative;
+  z-index: 1000;
+}
+
+.navbar-logo {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navbar-menu {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.navbar-link {
+  color: #dbeafe;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease;
+}
+
+.navbar-link:hover,
+.navbar-link.active {
+  color: #ffffff;
+}
+
+.navbar-link.active {
+  text-decoration: underline;
+  text-underline-offset: 7px;
+}
+
+.navbar-notification-badge {
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 20px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-logout {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  padding: 9px 17px;
+  background: #ffffff;
+  color: #1e40af;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.navbar-logout:hover {
+  background: #dbeafe;
+}
+
+.navbar-toggle {
+  display: none;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .main-navbar {
+    padding: 0 5%;
+  }
+
+  .navbar-toggle {
+    display: block;
+  }
+
+  .navbar-menu {
+    display: none;
+    position: absolute;
+    top: 76px;
+    left: 0;
+    width: 100%;
+    padding: 22px 5%;
+    background: #172554;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+  }
+
+  .navbar-menu.open {
+    display: flex;
+  }
+
+  .navbar-links {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  .navbar-link {
+    font-size: 15px;
+    padding: 4px 0;
+  }
+
+  .navbar-logout {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-navbar {
+    min-height: 68px;
+  }
+
+  .navbar-logo {
+    font-size: 21px;
+  }
+
+  .navbar-menu {
+    top: 68px;
+  }
+}

@@ -6,7 +6,6 @@ import API from "../services/api";
 function Dashboard() {
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const navigate = useNavigate();
 
@@ -37,26 +36,6 @@ function Dashboard() {
       active = false;
     };
   }, [navigate]);
-
-  const handleLogout = async () => {
-    if (loggingOut) return;
-
-    setLoggingOut(true);
-
-    try {
-      const response = await API.post("/auth/logout");
-      localStorage.removeItem("userId");
-      alert(response.data?.message || "Logged out successfully");
-      navigate("/login", { replace: true });
-    } catch (error) {
-      alert(
-        error.response?.data?.message ||
-          "Logout failed. Please try again."
-      );
-    } finally {
-      setLoggingOut(false);
-    }
-  };
 
   const dashboardItems = [
     {
@@ -95,36 +74,6 @@ function Dashboard() {
 
   return (
     <main className="dashboard-page">
-      <header className="dashboard-header">
-        <button
-          type="button"
-          className="dashboard-brand"
-          onClick={() => navigate("/dashboard")}
-        >
-          <span className="dashboard-brand-icon">⌂</span>
-          <span>Hometown <strong>Hub</strong></span>
-        </button>
-
-        <div className="dashboard-header-actions">
-          <button
-            type="button"
-            className="dashboard-header-link"
-            onClick={() => navigate("/profile")}
-          >
-            My Profile
-          </button>
-
-          <button
-            type="button"
-            className="dashboard-logout"
-            onClick={handleLogout}
-            disabled={loggingOut}
-          >
-            {loggingOut ? "Logging out..." : "Logout"}
-          </button>
-        </div>
-      </header>
-
       <div className="dashboard-container">
         <section className="dashboard-welcome">
           <div className="dashboard-welcome-content">
