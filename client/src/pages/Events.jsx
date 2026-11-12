@@ -1,213 +1,420 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import API from "../services/api";
 import "./Events.css";
 
 function Events() {
-  const [communityId, setCommunityId] = useState("");
+  const [communities, setCommunities] = useState([]);
+  const [selectedCommunity, setSelectedCommunity] = useState("all");
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [filterDate, setFilterDate] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [joiningEvent, setJoiningEvent] = useState(null);
 
-  const fetchEvents = async (e) => {
-    if (e) e.preventDefault();
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
 
-    if (!communityId.trim()) {
-      alert("Please enter a Community ID");
-      return;
-    }
+    return `${year}-${month}-${day}`;
+  };
 
+  useEffect(() => {
+    fetchPageData();
+  }, []);
+
+  const fetchPageData = async () => {
     try {
       setLoading(true);
-      setSearched(true);
-      setFilterDate("");
 
-      const response = await API.get(
-        `/events/community/${communityId.trim()}`
+      const [userResponse, communityResponse] = await Promise.all([
+        API.get("/test/protected"),
+        API.get("/communities"),
+      ]);
+
+      const currentUser =
+        userResponse.data.user || userResponse.data;
+
+      const currentUserId =
+  currentUser.userId || currentUser._id || currentUser.id;
+
+      setUserId(currentUserId);
+
+      const allCommunities =
+        communityResponse.data.communities || [];
+
+      const joinedCommunities = allCommunities.filter((community) =>
+        community.members?.some((member) => {
+          const memberId =
+            typeof member === "object" ? member._id : member;
+
+          return String(memberId) === String(currentUserId);
+        })
       );
 
-      const eventList = response.data.events || [];
+      setCommunities(joinedCommunities);
 
-      setEvents(eventList);
-      setFilteredEvents(eventList);
+      if (joinedCommunities.length === 0) {
+        setEvents([]);
+        setFilteredEvents([]);
+        return;
+      }
+
+      const results = await Promise.allSettled(
+        joinedCommunities.map((community) =>
+          API.get(`/events/community/${community._id}`)
+        )
+      );
+
+      const allEvents = results.flatMap((result) => {
+        if (result.status !== "fulfilled") {
+          return [];
+        }
+
+        return result.value.data.events || [];
+      });
+
+      const upcomingEvents = allEvents
+        .filter((event) => {
+          const eventDate = String(event.date || "").slice(0, 10);
+          return eventDate >= getTodayDate();
+        })
+        .sort((a, b) => {
+          const dateA = String(a.date || "").slice(0, 10);
+          const dateB = String(b.date || "").slice(0, 10);
+
+          if (dateA !== dateB) {
+            return dateA.localeCompare(dateB);
+          }
+
+          return String(a.time || "").localeCompare(
+            String(b.time || "")
+          );
+        });
+
+      setEvents(upcomingEvents);
+      setFilteredEvents(upcomingEvents);
     } catch (error) {
-      setEvents([]);
-      setFilteredEvents([]);
-
+      console.error("Failed to load events:", error);
       alert(
-        error.response?.data?.message || "Failed to load events"
+        error.response?.data?.message ||
+          "Failed to load events."
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDateFilter = (e) => {
-    const selectedDate = e.target.value;
+  const handleCommunityChange = (e) => {
+    const communityId = e.target.value;
 
-    setFilterDate(selectedDate);
+    setSelectedCommunity(communityId);
+    setFilterDate("");
 
-    if (!selectedDate) {
+    if (communityId === "all") {
       setFilteredEvents(events);
       return;
     }
 
     setFilteredEvents(
       events.filter((event) => {
-        const eventDate = String(event.date || "").slice(0, 10);
-        return eventDate === selectedDate;
+        const eventCommunity =
+          typeof event.community === "object"
+            ? event.community?._id
+            : event.community;
+
+        return String(eventCommunity) === String(communityId);
       })
     );
   };
 
-  const clearFilter = () => {
+  const handleDateFilter = (e) => {
+    const date = e.target.value;
+
+    setFilterDate(date);
+
+    let result = events;
+
+    if (selectedCommunity !== "all") {
+      result = result.filter((event) => {
+        const eventCommunity =
+          typeof event.community === "object"
+            ? event.community?._id
+            : event.community;
+
+        return String(eventCommunity) === String(selectedCommunity);
+      });
+    }
+
+    if (date) {
+      result = result.filter(
+        (event) =>
+          String(event.date || "").slice(0, 10) === date
+      );
+    }
+
+    setFilteredEvents(result);
+  };
+
+  const handleJoinEvent = async (eventId) => {
+    try {
+      setJoiningEvent(eventId);
+
+      const response = await API.post(`/events/${eventId}/join`);
+
+      const updatedEvent = response.data.event;
+
+      setEvents((previousEvents) =>
+        previousEvents.map((event) =>
+          event._id === eventId ? updatedEvent : event
+        )
+      );
+
+      setFilteredEvents((previousEvents) =>
+        previousEvents.map((event) =>
+          event._id === eventId ? updatedEvent : event
+        )
+      );
+
+      alert("You have successfully joined this event!");
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+          "Failed to join event."
+      );
+    } finally {
+      setJoiningEvent(null);
+    }
+  };
+
+  const isJoined = (event) =>
+    event.attendees?.some((attendee) => {
+      const attendeeId =
+        typeof attendee === "object"
+          ? attendee._id
+          : attendee;
+
+      return String(attendeeId) === String(userId);
+    });
+
+  const clearDateFilter = () => {
     setFilterDate("");
-    setFilteredEvents(events);
+    handleCommunityChange({
+      target: { value: selectedCommunity },
+    });
   };
 
   return (
     <main className="events-page">
       <section className="events-container">
-        <header className="events-header">
-          <span className="events-eyebrow">YOUR COMMUNITY</span>
-          <h1>Community Events</h1>
-          <p>Discover events and stay connected with your community.</p>
+        <header className="events-banner">
+          <div>
+            <span className="events-eyebrow">
+              YOUR COMMUNITY
+            </span>
+
+            <h1>Community Events</h1>
+
+            <p>
+              Discover upcoming events and stay connected
+              with your communities.
+            </p>
+
+            <Link
+              to="/dashboard"
+              className="events-back-button"
+            >
+              ← Back to Dashboard
+            </Link>
+          </div>
+
+          <Link
+            to="/events/create"
+            className="events-create-button"
+          >
+            + Create a New Event
+          </Link>
         </header>
 
-        <section className="events-search-card">
-          <h2>Find Community Events</h2>
-          <p>Enter your community ID to explore its events.</p>
+        <section className="events-filter-card">
+          <div className="events-filter-field">
+            <label htmlFor="communityFilter">
+              Select Community
+            </label>
 
-          <form className="events-search-form" onSubmit={fetchEvents}>
+            <select
+              id="communityFilter"
+              value={selectedCommunity}
+              onChange={handleCommunityChange}
+              disabled={loading}
+            >
+              <option value="all">All my communities</option>
+
+              {communities.map((community) => (
+                <option
+                  key={community._id}
+                  value={community._id}
+                >
+                  {community.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="events-filter-field">
+            <label htmlFor="eventDate">
+              Filter by Date
+            </label>
+
             <input
-              type="text"
-              placeholder="Enter Community ID"
-              value={communityId}
-              onChange={(e) => setCommunityId(e.target.value)}
-              aria-label="Community ID"
-              required
+              id="eventDate"
+              type="date"
+              min={getTodayDate()}
+              value={filterDate}
+              onChange={handleDateFilter}
+              disabled={loading}
             />
+          </div>
 
-            <button type="submit" disabled={loading}>
-              {loading ? "Loading..." : "Find Events"}
+          {filterDate && (
+            <button
+              type="button"
+              className="events-clear-button"
+              onClick={clearDateFilter}
+            >
+              Clear Date
             </button>
-          </form>
-
-          <Link className="events-create-link" to="/events/create">
-            <span aria-hidden="true">＋</span> Create a New Event
-          </Link>
+          )}
         </section>
 
-        {searched && !loading && events.length > 0 && (
-          <section className="events-filter-card">
-            <div className="events-filter-heading">
-              <h2>Filter Events</h2>
-              <span>{filteredEvents.length} found</span>
-            </div>
-
-            <label htmlFor="eventDate">Filter by date</label>
-
-            <div className="events-filter-controls">
-              <input
-                id="eventDate"
-                type="date"
-                value={filterDate}
-                onChange={handleDateFilter}
-              />
-
-              <button
-                className="events-clear-button"
-                type="button"
-                onClick={clearFilter}
-              >
-                Clear Filter
-              </button>
-            </div>
-          </section>
-        )}
-
         {loading && (
-          <p className="events-message" role="status">
-            Loading events...
-          </p>
+          <div className="events-message" role="status">
+            <span className="events-loader"></span>
+            <p>Loading upcoming events...</p>
+          </div>
         )}
 
-        {!loading && searched && events.length === 0 && (
+        {!loading && communities.length === 0 && (
           <div className="events-empty-state">
-            <span aria-hidden="true">📅</span>
-            <h2>No events found</h2>
-            <p>There are no events available for this community yet.</p>
+            <span>🏘️</span>
+            <h2>No communities joined yet</h2>
+            <p>
+              Join a community to discover its upcoming events.
+            </p>
+
+            <Link to="/communities">
+              Explore Communities
+            </Link>
           </div>
         )}
 
         {!loading &&
-          searched &&
-          events.length > 0 &&
+          communities.length > 0 &&
           filteredEvents.length === 0 && (
             <div className="events-empty-state">
-              <span aria-hidden="true">🔎</span>
-              <h2>No events for this date</h2>
-              <p>Try another date or clear the filter.</p>
-              <button
-                className="events-clear-button"
-                type="button"
-                onClick={clearFilter}
-              >
-                Clear Filter
-              </button>
+              <span>📅</span>
+              <h2>No upcoming events. Create one!</h2>
+              <p>
+                There are no upcoming events in this selection.
+              </p>
+
+              <Link to="/events/create">
+                Create an Event
+              </Link>
             </div>
           )}
 
         {!loading && filteredEvents.length > 0 && (
           <section className="events-list-section">
             <div className="events-list-heading">
-              <h2>Events List</h2>
-              <span>{filteredEvents.length} events</span>
+              <div>
+                <h2>Upcoming Events</h2>
+                <p>
+                  Explore what's happening in your communities.
+                </p>
+              </div>
+
+              <span>
+                {filteredEvents.length}{" "}
+                {filteredEvents.length === 1 ? "Event" : "Events"}
+              </span>
             </div>
 
             <div className="events-grid">
               {filteredEvents.map((event) => (
-                <article className="event-card" key={event._id}>
+                <article
+                  className="event-card"
+                  key={event._id}
+                >
                   <div className="event-card-top">
-                    <span className="event-card-icon" aria-hidden="true">
+                    <span className="event-card-icon">
                       📅
                     </span>
+
                     <span className="event-attendee-badge">
                       {event.attendees?.length || 0} attending
                     </span>
                   </div>
 
+                  <span className="event-community-name">
+                    {event.community?.name || "Community Event"}
+                  </span>
+
                   <h3>{event.title}</h3>
 
                   <div className="event-info">
                     <p>
-                      <span aria-hidden="true">🗓️</span>
-                      <strong>Date:</strong> {String(event.date || "").slice(0, 10) || "Not specified"}
+                      <span>🗓️</span>
+                      <strong>Date:</strong>{" "}
+                      {String(event.date || "").slice(0, 10)}
                     </p>
 
                     <p>
-                      <span aria-hidden="true">🕒</span>
-                      <strong>Time:</strong> {event.time || "Not specified"}
+                      <span>🕒</span>
+                      <strong>Time:</strong>{" "}
+                      {event.time || "Not specified"}
                     </p>
 
                     <p>
-                      <span aria-hidden="true">📍</span>
-                      <strong>Location:</strong> {event.location || "Not specified"}
+                      <span>📍</span>
+                      <strong>Location:</strong>{" "}
+                      {event.location || "Not specified"}
                     </p>
                   </div>
 
                   <p className="event-description">
-                    {event.description || "No description available."}
+                    {event.description ||
+                      "No description available."}
                   </p>
 
-                  <Link
-                    className="event-details-link"
-                    to={`/events/${event._id}`}
-                  >
-                    View Event Details <span aria-hidden="true">→</span>
-                  </Link>
+                  <div className="event-card-actions">
+                    <Link
+                      className="event-details-link"
+                      to={`/events/${event._id}`}
+                    >
+                      View Details →
+                    </Link>
+
+                    <button
+                      type="button"
+                      className="event-join-button"
+                      disabled={
+                        isJoined(event) ||
+                        joiningEvent === event._id
+                      }
+                      onClick={() => handleJoinEvent(event._id)}
+                    >
+                      {isJoined(event)
+                        ? "Joined"
+                        : joiningEvent === event._id
+                        ? "Joining..."
+                        : "Join Event"}
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
