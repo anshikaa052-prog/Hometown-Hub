@@ -416,6 +416,8 @@ function CommunityFeed() {
                     <img
                       src={post.image}
                       alt="Post"
+                      loading="lazy"
+                      decoding="async"
                       style={styles.postImage}
                     />
                   )}
