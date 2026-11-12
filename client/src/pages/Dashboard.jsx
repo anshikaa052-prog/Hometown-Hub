@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 
 function Dashboard() {
-  const [message, setMessage] = useState("");
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -19,7 +18,6 @@ function Dashboard() {
         const response = await API.get("/test/protected");
 
         if (active) {
-          setMessage(response.data.message || "Welcome to Hometown Hub!");
           setRole(response.data.user?.role || "");
         }
       } catch (error) {
@@ -143,12 +141,10 @@ function Dashboard() {
               and make every connection count.
             </p>
 
-            {loading ? (
-              <p className="dashboard-status">Loading your dashboard...</p>
-            ) : (
-              message && (
-                <p className="dashboard-status">{message}</p>
-              )
+            {loading && (
+              <p className="dashboard-status">
+                Loading your dashboard...
+              </p>
             )}
 
             <button
