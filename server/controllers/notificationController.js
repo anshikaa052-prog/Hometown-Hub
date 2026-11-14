@@ -1,3 +1,4 @@
+
 import Notification from "../models/Notification.js";
 
 // Get notifications for the logged-in user
@@ -46,6 +47,29 @@ export const markNotificationAsRead = async (req, res, next) => {
       success: true,
       message: "Notification marked as read",
       notification,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Mark all notifications as read
+export const markAllNotificationsAsRead = async (req, res, next) => {
+  try {
+    const result = await Notification.updateMany(
+      {
+        recipient: req.userId,
+        isRead: false,
+      },
+      {
+        $set: { isRead: true },
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "All notifications marked as read",
+      modifiedCount: result.modifiedCount,
     });
   } catch (error) {
     next(error);
