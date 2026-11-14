@@ -1,18 +1,43 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import socket from "../socket";
 import "./Notifications.css";
+
+const notificationTypes = {
+  like: {
+    icon: "❤️",
+    title: "New Like",
+  },
+  comment: {
+    icon: "💬",
+    title: "New Comment",
+  },
+  event: {
+    icon: "📅",
+    title: "Event Update",
+  },
+  community_approval: {
+    icon: "🏘️",
+    title: "Community Approval",
+  },
+  join_request: {
+    icon: "🙋",
+    title: "Join Request",
+  },
+};
 
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [markingId, setMarkingId] = useState(null);
+  const [markingAll, setMarkingAll] = useState(false);
+
   const navigate = useNavigate();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setError("");
       const response = await API.get("/notifications");
@@ -25,7 +50,7 @@ function Notifications() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchNotifications();
@@ -44,7 +69,7 @@ function Notifications() {
     return () => {
       socket.off("newNotification", handleNewNotification);
     };
-  }, []);
+  }, [fetchNotifications]);
 
   const markAsRead = async (notificationId) => {
     try {
@@ -67,6 +92,29 @@ function Notifications() {
       );
     } finally {
       setMarkingId(null);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      setMarkingAll(true);
+      setError("");
+
+      await API.patch("/notifications/read-all");
+
+      setNotifications((current) =>
+        current.map((item) => ({
+          ...item,
+          isRead: true,
+        }))
+      );
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Failed to mark all notifications as read."
+      );
+    } finally {
+      setMarkingAll(false);
     }
   };
 
@@ -123,6 +171,19 @@ function Notifications() {
           </div>
         </div>
 
+        {unreadCount > 0 && !loading && (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "18px" }}>
+            <button
+              type="button"
+              className="notification-read-button"
+              onClick={markAllAsRead}
+              disabled={markingAll}
+            >
+              {markingAll ? "Saving..." : "✓ Mark All as Read"}
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="notifications-error" role="alert">
             <p>{error}</p>
@@ -153,57 +214,61 @@ function Notifications() {
           </div>
         ) : (
           <div className="notifications-list">
-            {notifications.map((notification) => (
-              <article
-                key={notification._id}
-                className={`notification-card ${
-                  notification.isRead
-                    ? "notification-read"
-                    : "notification-unread"
-                }`}
-              >
-                <div className="notification-icon" aria-hidden="true">
-                  {notification.isRead ? "✓" : "🔔"}
-                </div>
+            {notifications.map((notification) => {
+              const type =
+                notificationTypes[notification.type] || {
+                  icon: "🔔",
+                  title: "Notification",
+                };
 
-                <div className="notification-details">
-                  <div className="notification-title-row">
-                    <h3>
-                      {notification.isRead
-                        ? "Notification"
-                        : "New Update"}
-                    </h3>
-
-                    {!notification.isRead && (
-                      <span className="notification-new-label">
-                        New
-                      </span>
-                    )}
+              return (
+                <article
+                  key={notification._id}
+                  className={`notification-card ${
+                    notification.isRead
+                      ? "notification-read"
+                      : "notification-unread"
+                  }`}
+                >
+                  <div className="notification-icon" aria-hidden="true">
+                    {type.icon}
                   </div>
 
-                  <p className="notification-message">
-                    {notification.message}
-                  </p>
+                  <div className="notification-details">
+                    <div className="notification-title-row">
+                      <h3>{type.title}</h3>
 
-                  <time className="notification-date">
-                    {formatDate(notification.createdAt)}
-                  </time>
-                </div>
+                      {!notification.isRead && (
+                        <span className="notification-new-label">
+                          New
+                        </span>
+                      )}
+                    </div>
 
-                {!notification.isRead && (
-                  <button
-                    type="button"
-                    className="notification-read-button"
-                    onClick={() => markAsRead(notification._id)}
-                    disabled={markingId === notification._id}
-                  >
-                    {markingId === notification._id
-                      ? "Saving..."
-                      : "Mark as Read"}
-                  </button>
-                )}
-              </article>
-            ))}
+                    <p className="notification-message">
+                      {notification.message}
+                    </p>
+
+                    <time className="notification-date">
+                      {formatDate(notification.createdAt)}
+                    </time>
+                  </div>
+
+                  {!notification.isRead && (
+                    <button
+                      type="button"
+                      className="notification-read-button"
+                      onClick={() => markAsRead(notification._id)}
+                      disabled={markingId === notification._id || markingAll}
+                    >
+                      {markingId === notification._id
+                        ? "Saving..."
+                        : "Mark as Read"}
+                    </button>
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
       </section>

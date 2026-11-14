@@ -6,19 +6,74 @@ import API from "../services/api";
 function Dashboard() {
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(true);
+  const [communities, setCommunities] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
 
   const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
 
-    const getProtectedData = async () => {
+    const getDashboardData = async () => {
       try {
-        const response = await API.get("/test/protected");
+        const userResponse = await API.get("/test/protected");
+        const user = userResponse.data.user || userResponse.data;
+        const userId = user.userId || user._id || user.id;
 
-        if (active) {
-          setRole(response.data.user?.role || "");
-        }
+        if (!active) return;
+
+        setRole(user.role || "");
+
+        const communitiesResponse = await API.get("/communities");
+        const allCommunities = communitiesResponse.data.communities || [];
+
+        const joinedCommunities = allCommunities.filter((community) =>
+          (community.members || []).some((member) => {
+            const memberId = member?._id || member;
+            return String(memberId) === String(userId);
+          })
+        );
+
+        if (!active) return;
+
+        setCommunities(joinedCommunities);
+
+        const eventResults = await Promise.allSettled(
+          joinedCommunities.map((community) =>
+            API.get(`/events/community/${community._id}`)
+          )
+        );
+
+        if (!active) return;
+
+        const allEvents = eventResults.flatMap((result) =>
+          result.status === "fulfilled"
+            ? result.value.data.events || []
+            : []
+        );
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const filteredEvents = allEvents
+          .filter((event) => {
+            const eventDate = new Date(event.date);
+            eventDate.setHours(0, 0, 0, 0);
+            return eventDate >= today;
+          })
+          .sort((a, b) => {
+            const dateA = new Date(
+              `${String(a.date).slice(0, 10)}T${a.time || "00:00"}`
+            );
+            const dateB = new Date(
+              `${String(b.date).slice(0, 10)}T${b.time || "00:00"}`
+            );
+
+            return dateA - dateB;
+          })
+          .slice(0, 3);
+
+        setUpcomingEvents(filteredEvents);
       } catch (error) {
         if (active) {
           navigate("/login", { replace: true });
@@ -30,12 +85,28 @@ function Dashboard() {
       }
     };
 
-    getProtectedData();
+    getDashboardData();
 
     return () => {
       active = false;
     };
   }, [navigate]);
+
+  const formatDate = (date) => {
+    if (!date) return "Date not available";
+
+    const [year, month, day] = String(date).slice(0, 10).split("-");
+
+    return new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day)
+    ).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   const dashboardItems = [
     {
@@ -127,10 +198,7 @@ function Dashboard() {
 
           <div className="dashboard-grid">
             {dashboardItems.map((item) => (
-              <article
-                className="dashboard-card"
-                key={item.title}
-              >
+              <article className="dashboard-card" key={item.title}>
                 <div
                   className={`dashboard-card-icon ${item.color}`}
                   aria-hidden="true"
@@ -172,6 +240,124 @@ function Dashboard() {
               </article>
             )}
           </div>
+        </section>
+
+        {/* Your Communities */}
+        <section className="dashboard-section">
+          <div className="dashboard-section-heading">
+            <div>
+              <span className="dashboard-label">YOUR CONNECTIONS</span>
+              <h2>Your Communities</h2>
+              <p>Communities you have joined.</p>
+            </div>
+          </div>
+
+          {loading ? (
+            <p className="dashboard-empty">Loading your communities...</p>
+          ) : communities.length === 0 ? (
+            <div className="dashboard-card">
+              <h3>No communities joined yet</h3>
+              <p>Explore communities and join one to get started.</p>
+              <button
+                type="button"
+                className="dashboard-card-button"
+                onClick={() => navigate("/communities")}
+              >
+                Explore Communities →
+              </button>
+            </div>
+          ) : (
+            <div className="dashboard-grid">
+              {communities.slice(0, 4).map((community) => (
+                <article className="dashboard-card" key={community._id}>
+                  <div className="dashboard-card-icon blue">🏡</div>
+
+                  <h3>{community.name}</h3>
+
+                  <p>
+                    {community.city || "Local Community"}
+                    <br />
+                    {community.members?.length || 0} Members
+                  </p>
+
+                  <button
+                    type="button"
+                    className="dashboard-card-button"
+                    onClick={() =>
+                      navigate(`/communities/${community._id}`)
+                    }
+                  >
+                    View Community →
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {communities.length > 4 && (
+            <button
+              type="button"
+              className="dashboard-card-button"
+              onClick={() => navigate("/communities")}
+              style={{ marginTop: "18px" }}
+            >
+              View All Communities →
+            </button>
+          )}
+        </section>
+
+        {/* Upcoming Events */}
+        <section className="dashboard-section">
+          <div className="dashboard-section-heading">
+            <div>
+              <span className="dashboard-label">WHAT'S HAPPENING</span>
+              <h2>Upcoming Events</h2>
+              <p>Don't miss what's happening in your communities.</p>
+            </div>
+          </div>
+
+          {loading ? (
+            <p className="dashboard-empty">Loading upcoming events...</p>
+          ) : upcomingEvents.length === 0 ? (
+            <div className="dashboard-card">
+              <h3>No upcoming events</h3>
+              <p>There are no upcoming events in your communities right now.</p>
+              <button
+                type="button"
+                className="dashboard-card-button"
+                onClick={() => navigate("/events")}
+              >
+                Explore Events →
+              </button>
+            </div>
+          ) : (
+            <div className="dashboard-grid">
+              {upcomingEvents.map((event) => (
+                <article className="dashboard-card" key={event._id}>
+                  <div className="dashboard-card-icon green">📅</div>
+
+                  <h3>{event.title}</h3>
+
+                  <p>
+                    <strong>Date:</strong> {formatDate(event.date)}
+                    <br />
+                    <strong>Time:</strong> {event.time || "Not specified"}
+                    <br />
+                    <strong>Location:</strong>{" "}
+                    {event.location || "Not specified"}
+                  </p>
+
+                  <button
+                    type="button"
+                    className="dashboard-card-button"
+                    onClick={() => navigate(`/events/${event._id}`)}
+                  >
+                    View Event →
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         <footer className="dashboard-footer">

@@ -34,8 +34,9 @@ function Communities() {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Failed to load communities."
+          "Failed to load communities. Please try again."
       );
+      setCommunities([]);
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ function Communities() {
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Failed to create community."
+          "Failed to create community. Please try again."
       );
     } finally {
       setCreating(false);
@@ -110,6 +111,13 @@ function Communities() {
       {error && (
         <div className="communities-error" role="alert">
           {error}
+          <button
+            type="button"
+            onClick={() => fetchCommunities(search)}
+            disabled={loading}
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -129,13 +137,14 @@ function Communities() {
           />
 
           <button type="submit" disabled={loading}>
-            Search
+            {loading ? "Searching..." : "Search"}
           </button>
 
           <button
             type="button"
             className="communities-clear-button"
             onClick={handleClear}
+            disabled={loading}
           >
             Clear
           </button>
@@ -206,14 +215,39 @@ function Communities() {
         </div>
 
         {loading ? (
-          <p className="communities-message">
+          <div className="communities-message" role="status">
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                border: "4px solid #e0e7ff",
+                borderTop: "4px solid #4f46e5",
+                borderRadius: "50%",
+                animation: "communitySpin 0.8s linear infinite",
+                margin: "0 auto 12px",
+              }}
+            />
             Loading communities...
-          </p>
+            <style>
+              {`
+                @keyframes communitySpin {
+                  to { transform: rotate(360deg); }
+                }
+              `}
+            </style>
+          </div>
+        ) : error ? (
+          <div className="communities-empty">
+            <h3>Unable to load communities</h3>
+            <p>Please check your connection and try again.</p>
+          </div>
         ) : communities.length === 0 ? (
           <div className="communities-empty">
             <h3>No communities found</h3>
             <p>
-              Try another search or create a new community.
+              {search.trim()
+                ? "Try searching with a different name or city."
+                : "No communities are available yet. Be the first to create one!"}
             </p>
           </div>
         ) : (

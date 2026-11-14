@@ -13,6 +13,8 @@ function Events() {
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(true);
   const [joiningEvent, setJoiningEvent] = useState(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const getTodayDate = () => {
     const today = new Date();
@@ -30,6 +32,7 @@ function Events() {
   const fetchPageData = async () => {
     try {
       setLoading(true);
+      setError("");
 
       const [userResponse, communityResponse] = await Promise.all([
         API.get("/test/protected"),
@@ -40,7 +43,7 @@ function Events() {
         userResponse.data.user || userResponse.data;
 
       const currentUserId =
-  currentUser.userId || currentUser._id || currentUser.id;
+        currentUser.userId || currentUser._id || currentUser.id;
 
       setUserId(currentUserId);
 
@@ -70,6 +73,10 @@ function Events() {
         )
       );
 
+      const failedRequests = results.some(
+        (result) => result.status === "rejected"
+      );
+
       const allEvents = results.flatMap((result) => {
         if (result.status !== "fulfilled") {
           return [];
@@ -77,6 +84,10 @@ function Events() {
 
         return result.value.data.events || [];
       });
+
+      if (failedRequests && allEvents.length === 0) {
+        setError("Failed to load events. Please try again.");
+      }
 
       const upcomingEvents = allEvents
         .filter((event) => {
@@ -100,9 +111,9 @@ function Events() {
       setFilteredEvents(upcomingEvents);
     } catch (error) {
       console.error("Failed to load events:", error);
-      alert(
+      setError(
         error.response?.data?.message ||
-          "Failed to load events."
+          "Failed to load events. Please try again."
       );
     } finally {
       setLoading(false);
@@ -114,6 +125,7 @@ function Events() {
 
     setSelectedCommunity(communityId);
     setFilterDate("");
+    setSuccess("");
 
     if (communityId === "all") {
       setFilteredEvents(events);
@@ -136,6 +148,7 @@ function Events() {
     const date = e.target.value;
 
     setFilterDate(date);
+    setSuccess("");
 
     let result = events;
 
@@ -163,6 +176,8 @@ function Events() {
   const handleJoinEvent = async (eventId) => {
     try {
       setJoiningEvent(eventId);
+      setError("");
+      setSuccess("");
 
       const response = await API.post(`/events/${eventId}/join`);
 
@@ -180,11 +195,11 @@ function Events() {
         )
       );
 
-      alert("You have successfully joined this event!");
+      setSuccess("You have successfully joined this event!");
     } catch (error) {
-      alert(
+      setError(
         error.response?.data?.message ||
-          "Failed to join event."
+          "Failed to join event. Please try again."
       );
     } finally {
       setJoiningEvent(null);
@@ -239,6 +254,31 @@ function Events() {
             + Create a New Event
           </Link>
         </header>
+
+        {error && (
+          <div
+            className="events-empty-state"
+            role="alert"
+          >
+            <p>{error}</p>
+            <button
+              type="button"
+              onClick={fetchPageData}
+              disabled={loading}
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {success && (
+          <div
+            className="events-success-message"
+            role="status"
+          >
+            {success}
+          </div>
+        )}
 
         <section className="events-filter-card">
           <div className="events-filter-field">
@@ -298,7 +338,7 @@ function Events() {
           </div>
         )}
 
-        {!loading && communities.length === 0 && (
+        {!loading && !error && communities.length === 0 && (
           <div className="events-empty-state">
             <span>🏘️</span>
             <h2>No communities joined yet</h2>
@@ -313,13 +353,22 @@ function Events() {
         )}
 
         {!loading &&
+          !error &&
           communities.length > 0 &&
           filteredEvents.length === 0 && (
             <div className="events-empty-state">
               <span>📅</span>
-              <h2>No upcoming events. Create one!</h2>
+              <h2>
+                {filterDate
+                  ? "No events on this date"
+                  : selectedCommunity !== "all"
+                  ? "No upcoming events in this community"
+                  : "No upcoming events yet"}
+              </h2>
               <p>
-                There are no upcoming events in this selection.
+                {filterDate
+                  ? "Try selecting another date."
+                  : "You can create an event and bring your community together."}
               </p>
 
               <Link to="/events/create">
@@ -328,98 +377,100 @@ function Events() {
             </div>
           )}
 
-        {!loading && filteredEvents.length > 0 && (
-          <section className="events-list-section">
-            <div className="events-list-heading">
-              <div>
-                <h2>Upcoming Events</h2>
-                <p>
-                  Explore what's happening in your communities.
-                </p>
+        {!loading &&
+          !error &&
+          filteredEvents.length > 0 && (
+            <section className="events-list-section">
+              <div className="events-list-heading">
+                <div>
+                  <h2>Upcoming Events</h2>
+                  <p>
+                    Explore what's happening in your communities.
+                  </p>
+                </div>
+
+                <span>
+                  {filteredEvents.length}{" "}
+                  {filteredEvents.length === 1 ? "Event" : "Events"}
+                </span>
               </div>
 
-              <span>
-                {filteredEvents.length}{" "}
-                {filteredEvents.length === 1 ? "Event" : "Events"}
-              </span>
-            </div>
+              <div className="events-grid">
+                {filteredEvents.map((event) => (
+                  <article
+                    className="event-card"
+                    key={event._id}
+                  >
+                    <div className="event-card-top">
+                      <span className="event-card-icon">
+                        📅
+                      </span>
 
-            <div className="events-grid">
-              {filteredEvents.map((event) => (
-                <article
-                  className="event-card"
-                  key={event._id}
-                >
-                  <div className="event-card-top">
-                    <span className="event-card-icon">
-                      📅
+                      <span className="event-attendee-badge">
+                        {event.attendees?.length || 0} attending
+                      </span>
+                    </div>
+
+                    <span className="event-community-name">
+                      {event.community?.name || "Community Event"}
                     </span>
 
-                    <span className="event-attendee-badge">
-                      {event.attendees?.length || 0} attending
-                    </span>
-                  </div>
+                    <h3>{event.title}</h3>
 
-                  <span className="event-community-name">
-                    {event.community?.name || "Community Event"}
-                  </span>
+                    <div className="event-info">
+                      <p>
+                        <span>🗓️</span>
+                        <strong>Date:</strong>{" "}
+                        {String(event.date || "").slice(0, 10)}
+                      </p>
 
-                  <h3>{event.title}</h3>
+                      <p>
+                        <span>🕒</span>
+                        <strong>Time:</strong>{" "}
+                        {event.time || "Not specified"}
+                      </p>
 
-                  <div className="event-info">
-                    <p>
-                      <span>🗓️</span>
-                      <strong>Date:</strong>{" "}
-                      {String(event.date || "").slice(0, 10)}
+                      <p>
+                        <span>📍</span>
+                        <strong>Location:</strong>{" "}
+                        {event.location || "Not specified"}
+                      </p>
+                    </div>
+
+                    <p className="event-description">
+                      {event.description ||
+                        "No description available."}
                     </p>
 
-                    <p>
-                      <span>🕒</span>
-                      <strong>Time:</strong>{" "}
-                      {event.time || "Not specified"}
-                    </p>
+                    <div className="event-card-actions">
+                      <Link
+                        className="event-details-link"
+                        to={`/events/${event._id}`}
+                      >
+                        View Details →
+                      </Link>
 
-                    <p>
-                      <span>📍</span>
-                      <strong>Location:</strong>{" "}
-                      {event.location || "Not specified"}
-                    </p>
-                  </div>
-
-                  <p className="event-description">
-                    {event.description ||
-                      "No description available."}
-                  </p>
-
-                  <div className="event-card-actions">
-                    <Link
-                      className="event-details-link"
-                      to={`/events/${event._id}`}
-                    >
-                      View Details →
-                    </Link>
-
-                    <button
-                      type="button"
-                      className="event-join-button"
-                      disabled={
-                        isJoined(event) ||
-                        joiningEvent === event._id
-                      }
-                      onClick={() => handleJoinEvent(event._id)}
-                    >
-                      {isJoined(event)
-                        ? "Joined"
-                        : joiningEvent === event._id
-                        ? "Joining..."
-                        : "Join Event"}
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
+                      <button
+                        type="button"
+                        className="event-join-button"
+                        disabled={
+                          isJoined(event) ||
+                          joiningEvent === event._id
+                        }
+                        onClick={() => handleJoinEvent(event._id)}
+                      >
+                        {isJoined(event)
+                          ? "Joined"
+                          : joiningEvent === event._id
+                          ? "Joining..."
+                          : "Join Event"}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
       </section>
     </main>
   );
